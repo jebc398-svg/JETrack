@@ -93,14 +93,14 @@ export default function Sidebar({
       {/* Logo Area — Premium */}
       <div
         style={{
-          padding: "28px 20px 24px",
+          height: "72px",
           background: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
-          gap: "6px",
+          justifyContent: "center",
           position: "relative",
-          overflow: "hidden",
+          overflow: "visible",
+          flexShrink: 0,
         }}
       >
         {/* Subtle texture overlay */}
@@ -125,19 +125,6 @@ export default function Sidebar({
             filter: "brightness(0) invert(1)",
           }}
         />
-        <span
-          style={{
-            fontSize: "11px",
-            color: "rgba(255, 255, 255, 0.6)",
-            fontWeight: 500,
-            letterSpacing: "0.15em",
-            textTransform: "uppercase",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          Field Service Platform
-        </span>
 
         {isMobile && (
           <button
