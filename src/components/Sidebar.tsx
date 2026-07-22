@@ -11,11 +11,10 @@ import {
   Settings,
   Menu,
   X,
-  ClipboardList,
-  HardHat,
   Download,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import logo2 from "../logo2.png";
 
 interface SidebarProps {
   activePage: string;
@@ -75,54 +74,89 @@ export default function Sidebar({
   const sidebarContent = (
     <div
       style={{
-        width: isMobile ? "280px" : isOpen ? "260px" : "0px",
-        minWidth: isMobile ? "280px" : isOpen ? "260px" : "0px",
+        width: isMobile ? "288px" : isOpen ? "272px" : "0px",
+        minWidth: isMobile ? "288px" : isOpen ? "272px" : "0px",
         height: "100vh",
         background: "white",
-        borderRight: "1px solid #e2e8f0",
+        borderRight: "1px solid rgba(226, 232, 240, 0.6)",
         display: "flex",
         flexDirection: "column",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
         overflow: "hidden",
         position: isMobile ? "fixed" : "relative",
         zIndex: isMobile ? 1000 : 1,
         top: 0,
         left: 0,
+        boxShadow: isMobile ? "4px 0 24px rgba(0, 0, 0, 0.08)" : "none",
       }}
     >
-      {/* Logo Area */}
+      {/* Logo Area — Premium */}
       <div
         style={{
-          padding: "20px 16px",
-          background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+          padding: "24px 20px 20px",
+          background: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          gap: "12px",
-          minHeight: "72px",
+          gap: "4px",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <img
-          src="/logo.png"
-          alt="Logo"
+        {/* Subtle texture overlay */}
+        <div
           style={{
-            height: "32px",
-            width: "auto",
-            objectFit: "contain",
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(circle at 30% 40%, rgba(96, 165, 250, 0.15) 0%, transparent 60%)",
+            pointerEvents: "none",
           }}
         />
+
+        <img
+          src={logo2.src}
+          alt="JETrack"
+          style={{
+            height: "52px",
+            width: "auto",
+            objectFit: "contain",
+            position: "relative",
+            zIndex: 1,
+            filter: "brightness(0) invert(1)",
+          }}
+        />
+        <span
+          style={{
+            fontSize: "11px",
+            color: "rgba(255, 255, 255, 0.6)",
+            fontWeight: 500,
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          Field Service Platform
+        </span>
+
         {isMobile && (
           <button
             onClick={onMobileClose}
             style={{
-              marginLeft: "auto",
-              background: "rgba(255,255,255,0.2)",
+              position: "absolute",
+              top: "16px",
+              right: "16px",
+              background: "rgba(255, 255, 255, 0.15)",
               border: "none",
-              borderRadius: "8px",
-              padding: "6px",
+              borderRadius: "10px",
+              padding: "8px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              backdropFilter: "blur(8px)",
+              transition: "all 0.2s ease",
+              zIndex: 2,
             }}
           >
             <X size={18} color="white" />
@@ -134,14 +168,14 @@ export default function Sidebar({
       <nav
         style={{
           flex: 1,
-          padding: "12px 8px",
+          padding: "16px 12px",
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
           gap: "2px",
         }}
       >
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = activePage === item.id;
           return (
@@ -153,6 +187,7 @@ export default function Sidebar({
                 width: "100%",
                 border: "none",
                 textAlign: "left",
+                animation: `slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.04}s both`,
               }}
             >
               <Icon size={18} />
@@ -177,14 +212,14 @@ export default function Sidebar({
               gap: "10px",
               padding: "12px 16px",
               borderRadius: "14px",
-              background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+              background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
               color: "white",
               fontSize: "13px",
               fontWeight: 600,
               textDecoration: "none",
               cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(29, 78, 216, 0.3)",
-              transition: "all 0.2s ease",
+              boxShadow: "0 2px 12px rgba(29, 78, 216, 0.25)",
+              transition: "all 0.3s ease",
             }}
           >
             <Download size={16} />
@@ -193,34 +228,36 @@ export default function Sidebar({
         </div>
       )}
 
-      {/* User Info */}
+      {/* User Info — Premium */}
       <div
         style={{
           padding: "16px",
-          borderTop: "1px solid #e2e8f0",
+          borderTop: "1px solid rgba(226, 232, 240, 0.6)",
           display: "flex",
           alignItems: "center",
           gap: "12px",
+          background: "rgba(248, 250, 252, 0.5)",
         }}
       >
         <div
           style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "10px",
+            width: "40px",
+            height: "40px",
+            borderRadius: "12px",
             background: "linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "13px",
+            fontSize: "14px",
             fontWeight: 700,
             color: "white",
             flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(29, 78, 216, 0.2)",
           }}
         >
           {initials}
         </div>
-        <div style={{ overflow: "hidden" }}>
+        <div style={{ overflow: "hidden", flex: 1 }}>
           <div
             style={{
               fontSize: "13px",
@@ -229,15 +266,17 @@ export default function Sidebar({
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
+              lineHeight: 1.3,
             }}
           >
             {user.name}
           </div>
           <div
             style={{
-              fontSize: "12px",
+              fontSize: "11px",
               color: "#94a3b8",
               fontWeight: 500,
+              marginTop: "1px",
             }}
           >
             {roleLabel}
@@ -258,14 +297,15 @@ export default function Sidebar({
             left: "16px",
             zIndex: 900,
             background: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "12px",
+            border: "1px solid rgba(226, 232, 240, 0.6)",
+            borderRadius: "14px",
             padding: "10px",
             cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.06)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "all 0.25s ease",
           }}
         >
           <Menu size={20} color="#475569" />
@@ -277,9 +317,11 @@ export default function Sidebar({
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(15, 23, 42, 0.5)",
-              backdropFilter: "blur(4px)",
+              background: "rgba(15, 23, 42, 0.4)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
               zIndex: 999,
+              animation: "fadeIn 0.2s ease-out",
             }}
           >
             <div onClick={(e) => e.stopPropagation()}>{sidebarContent}</div>

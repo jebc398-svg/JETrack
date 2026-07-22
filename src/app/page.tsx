@@ -124,9 +124,9 @@ export default function Home() {
           className="app-main"
           style={{
             flex: 1,
-            padding: isMobile ? "16px" : "24px",
+            padding: isMobile ? "16px" : "28px",
             overflow: "auto",
-            background: "#f8fafc",
+            background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
           }}
         >
           {renderPage()}

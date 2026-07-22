@@ -172,15 +172,17 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div className="space-y-7">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-text-primary">Dashboard</h1>
-          <p className="text-sm text-text-secondary mt-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary">
+            Dashboard
+          </h1>
+          <p className="text-sm text-text-secondary mt-1.5">
             Resumen general de operaciones
           </p>
         </div>
-        <span className="text-sm text-text-tertiary hidden sm:block">
+        <span className="text-xs text-text-tertiary hidden sm:block font-medium tracking-wide">
           {today.toLocaleDateString("es-MX", {
             weekday: "long",
             year: "numeric",
@@ -190,7 +192,7 @@ export default function Dashboard() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {metricCards.map((metric, i) => (
           <motion.div
             key={metric.title}
@@ -198,27 +200,27 @@ export default function Dashboard() {
             initial="hidden"
             animate="visible"
             variants={cardVariants}
-            className="card p-5"
+            className="card p-6"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-text-secondary">{metric.title}</p>
-                <p className="text-2xl font-bold text-text-primary mt-1">
+                <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{metric.title}</p>
+                <p className="text-3xl font-extrabold text-text-primary mt-2 tracking-tight">
                   {metric.value}
                 </p>
               </div>
-              <div className={`${metric.color} p-2.5 rounded-xl`}>
+              <div className={`${metric.color} p-3 rounded-2xl`}>
                 <metric.icon className={`w-5 h-5 ${metric.iconColor}`} />
               </div>
             </div>
-            <div className="flex items-center gap-1 mt-3">
+            <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-border-light">
               {metric.positive ? (
                 <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
               ) : (
                 <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
               )}
               <span
-                className={`text-xs font-medium ${
+                className={`text-xs font-semibold ${
                   metric.positive ? "text-emerald-500" : "text-red-500"
                 }`}
               >
@@ -237,11 +239,11 @@ export default function Dashboard() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="card-static overflow-hidden"
         >
-          <div className="flex items-center justify-between p-5 pb-0">
-            <h2 className="font-semibold text-text-primary">Tickets Recientes</h2>
+          <div className="flex items-center justify-between p-6 pb-0">
+            <h2 className="font-bold text-lg text-text-primary tracking-tight">Tickets Recientes</h2>
             <button
               onClick={() => setActivePage("tickets")}
-              className="btn-ghost text-xs text-primary-500 hover:text-primary-600"
+              className="btn-ghost text-xs font-semibold text-primary-500 hover:text-primary-600"
             >
               Ver todos
             </button>
@@ -300,22 +302,26 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          className="card-static p-5"
+          className="card-static p-6"
         >
-          <h2 className="font-semibold text-text-primary mb-6">
+          <h2 className="font-bold text-lg text-text-primary tracking-tight mb-6">
             Actividad de la Semana
           </h2>
-          <div className="flex items-end justify-between gap-2 h-48 px-2">
+          <div className="flex items-end justify-between gap-3 h-48 px-2">
             {weekDays.map((day, i) => (
               <div key={day} className="flex flex-col items-center flex-1 h-full justify-end">
-                <span className="text-xs text-text-tertiary mb-2">
+                <span className="text-xs font-semibold text-text-tertiary mb-2">
                   {weekActivity[i]}%
                 </span>
                 <div
-                  className="w-full bg-primary-500 rounded-t-lg transition-all duration-500 hover:bg-primary-600"
-                  style={{ height: `${weekActivity[i]}%` }}
+                  className="w-full rounded-2xl transition-all duration-700 hover:opacity-90"
+                  style={{
+                    height: `${weekActivity[i]}%`,
+                    background: `linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%)`,
+                    boxShadow: "0 2px 8px rgba(29, 78, 216, 0.15)",
+                  }}
                 />
-                <span className="text-xs text-text-secondary mt-2 font-medium">
+                <span className="text-xs text-text-secondary mt-2.5 font-semibold">
                   {day}
                 </span>
               </div>
@@ -329,10 +335,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          className="card-static p-5"
+          className="card-static p-6"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-text-primary">Calendario</h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-bold text-lg text-text-primary tracking-tight">Calendario</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigateMonth(-1)}
@@ -395,10 +401,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.5 }}
-          className="card-static p-5"
+          className="card-static p-6"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-text-primary">Estado de Técnicos</h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-bold text-lg text-text-primary tracking-tight">Estado de Técnicos</h2>
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-text-tertiary" />
               <span className="text-sm text-text-secondary">{technicians.length}</span>
@@ -455,10 +461,10 @@ export default function Dashboard() {
             initial="hidden"
             animate="visible"
             variants={cardVariants}
-            className="card-static p-4 text-center"
+            className="card-static p-5 text-center"
           >
-            <p className="text-sm text-text-secondary">{pm.label}</p>
-            <p className="text-xl font-bold text-text-primary mt-1">{pm.value}</p>
+            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{pm.label}</p>
+            <p className="text-2xl font-extrabold text-text-primary mt-2 tracking-tight">{pm.value}</p>
           </motion.div>
         ))}
       </div>
