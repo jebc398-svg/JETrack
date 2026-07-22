@@ -93,12 +93,12 @@ export default function Sidebar({
       {/* Logo Area — Premium */}
       <div
         style={{
-          padding: "24px 20px 20px",
+          padding: "28px 20px 24px",
           background: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: "4px",
+          gap: "6px",
           position: "relative",
           overflow: "hidden",
         }}
@@ -117,7 +117,7 @@ export default function Sidebar({
           src={logo2.src}
           alt="JETrack"
           style={{
-            height: "52px",
+            height: "150px",
             width: "auto",
             objectFit: "contain",
             position: "relative",
