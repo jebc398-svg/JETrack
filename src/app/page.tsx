@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import Login from "@/components/Login";
+import TechApp from "@/components/tech/TechApp";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Dashboard from "@/components/pages/Dashboard";
@@ -70,6 +71,10 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  if (user.role === "technician") {
+    return <TechApp />;
   }
 
   const renderPage = () => {
