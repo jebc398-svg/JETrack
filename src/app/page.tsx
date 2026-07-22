@@ -14,6 +14,7 @@ import Clients from "@/components/pages/Clients";
 import Technicians from "@/components/pages/Technicians";
 import Reports from "@/components/pages/Reports";
 import Settings from "@/components/pages/Settings";
+import NewTicketModal from "@/components/NewTicketModal";
 
 const allowedPagesByRole: Record<string, string[]> = {
   admin: ["dashboard", "tickets", "calendario", "cotizaciones", "clientes", "tecnicos", "reportes", "configuracion"],
@@ -132,6 +133,8 @@ export default function Home() {
           {renderPage()}
         </main>
       </div>
+
+      <NewTicketModal />
     </div>
   );
 }
