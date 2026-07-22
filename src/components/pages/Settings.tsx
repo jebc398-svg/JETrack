@@ -203,6 +203,13 @@ export default function SettingsPage() {
     mapProvider: "google",
   });
 
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  const showSaved = (msg: string) => {
+    setSavedMessage(msg);
+    setTimeout(() => setSavedMessage(null), 2000);
+  };
+
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<SettingsUser["role"]>("technician");
@@ -272,6 +279,21 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
+      {/* Save Confirmation Toast */}
+      <AnimatePresence>
+        {savedMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium"
+          >
+            <Check className="w-4 h-4" />
+            {savedMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
           <Settings className="w-7 h-7 text-[var(--color-primary-500)]" />
@@ -397,7 +419,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={() => showSaved("Configuración general guardada")}>
                       <Save className="w-4 h-4" />
                       Guardar Cambios
                     </button>
@@ -634,7 +656,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={() => showSaved("Tarifas guardadas")}>
                       <Save className="w-4 h-4" />
                       Guardar Tarifas
                     </button>
@@ -725,7 +747,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={() => showSaved("Notificaciones guardadas")}>
                       <Save className="w-4 h-4" />
                       Guardar Notificaciones
                     </button>
@@ -781,7 +803,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={() => showSaved("Permisos guardados")}>
                       <Save className="w-4 h-4" />
                       Guardar Permisos
                     </button>
@@ -906,7 +928,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={() => showSaved("Personalización guardada")}>
                       <Save className="w-4 h-4" />
                       Guardar Personalización
                     </button>

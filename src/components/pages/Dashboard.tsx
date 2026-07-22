@@ -47,7 +47,6 @@ const availabilityColors: Record<string, string> = {
 };
 
 const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-const weekActivity = [65, 82, 45, 90, 72, 30, 15];
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -59,22 +58,26 @@ const cardVariants = {
 };
 
 export default function Dashboard() {
-  const { tickets, technicians, setActivePage } = useAppStore();
+  const { tickets, technicians, quotations, setActivePage } = useAppStore();
   const [calendarDate, setCalendarDate] = useState(new Date());
 
   const metrics = useMemo(() => {
     const today = new Date().toISOString().split("T")[0];
+    const totalTickets = tickets.length;
     const activeTickets = tickets.filter(
       (t) => t.status !== "completado" && t.status !== "cancelado"
     ).length;
     const completedToday = tickets.filter(
       (t) => t.status === "completado" && t.completedAt?.startsWith(today)
     ).length;
+    const pendingTickets = tickets.filter(
+      (t) => t.status === "pending" || t.status === "scheduled"
+    ).length;
     return {
-      totalTickets: 247,
-      activeTickets: activeTickets || 18,
-      completedToday: completedToday || 5,
-      revenue: 385000,
+      totalTickets,
+      activeTickets,
+      completedToday,
+      pendingTickets,
     };
   }, [tickets]);
 
@@ -83,6 +86,70 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 5);
   }, [tickets]);
+
+  const weekActivity = useMemo(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const dateStr = day.toISOString().split("T")[0];
+      const count = tickets.filter((t) => t.scheduledDate === dateStr).length;
+      const maxPerDay = Math.max(
+        ...Array.from({ length: 7 }, (_, j) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + j);
+          const ds = d.toISOString().split("T")[0];
+          return tickets.filter((t) => t.scheduledDate === ds).length;
+        }),
+        1
+      );
+      return Math.round((count / maxPerDay) * 100);
+    });
+  }, [tickets]);
+
+  const revenue = useMemo(() => {
+    return quotations
+      .filter((q) => q.status === "aprobada" || q.status === "facturada")
+      .reduce((sum, q) => sum + q.total, 0);
+  }, [quotations]);
+
+  const performanceMetrics = useMemo(() => {
+    const completed = tickets.filter((t) => t.status === "completado");
+    const avgTime =
+      completed.length > 0
+        ? Math.round(
+            completed.reduce((sum, t) => sum + (t.actualDuration || t.estimatedDuration), 0) /
+              completed.length
+          )
+        : 0;
+    const avgHrs = Math.floor(avgTime / 60);
+    const avgMins = avgTime % 60;
+    const avgTimeStr = avgTime > 0 ? `${avgHrs}h ${avgMins}m` : "0h 0m";
+    const totalRatings = technicians.reduce((sum, t) => sum + t.rating, 0);
+    const avgRating =
+      technicians.length > 0 ? (totalRatings / technicians.length).toFixed(1) : "0.0";
+    const techsWorking = technicians.filter(
+      (t) => t.availability === "en_trabajo"
+    ).length;
+    const utilization =
+      technicians.length > 0
+        ? Math.round((techsWorking / technicians.length) * 100)
+        : 0;
+    const pending = tickets.filter(
+      (t) => t.status === "pending" || t.status === "scheduled"
+    ).length;
+    return [
+      { label: "Tiempo Promedio", value: avgTimeStr },
+      { label: "Satisfacción", value: `${avgRating}/5.0` },
+      { label: "Utilización", value: `${utilization}%` },
+      { label: "Tickets Pendientes", value: pending.toString() },
+    ];
+  }, [tickets, technicians]);
 
   const calendarDays = useMemo(() => {
     const year = calendarDate.getFullYear();
@@ -155,20 +222,13 @@ export default function Dashboard() {
     },
     {
       title: "Ingresos del Mes",
-      value: formatCurrency(metrics.revenue),
+      value: formatCurrency(revenue),
       icon: DollarSign,
       color: "bg-violet-100",
       iconColor: "text-violet-600",
       change: "+8%",
       positive: true,
     },
-  ];
-
-  const performanceMetrics = [
-    { label: "Tiempo Promedio", value: "3.25 hrs" },
-    { label: "Satisfacción", value: "4.7/5.0" },
-    { label: "Utilización", value: "82%" },
-    { label: "Tickets Pendientes", value: "12" },
   ];
 
   return (
@@ -304,7 +364,7 @@ export default function Dashboard() {
           transition={{ delay: 0.5, duration: 0.5 }}
           className="card-static p-6"
         >
-          <h2 className="font-bold text-lg text-text-primary tracking-tight mb-6">
+            <h2 className="font-bold text-lg text-text-primary tracking-tight mb-6">
             Actividad de la Semana
           </h2>
           <div className="flex items-end justify-between gap-3 h-48 px-2">

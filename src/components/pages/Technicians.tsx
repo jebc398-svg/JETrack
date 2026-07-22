@@ -10,6 +10,7 @@ import {
   Search,
   Eye,
   Pencil,
+  Trash2,
   Star,
   Phone,
   Mail,
@@ -51,7 +52,7 @@ const emptyForm = {
 };
 
 export default function TechniciansPage() {
-  const { technicians, tickets, addTechnician, openModal, closeModal, modals } =
+  const { technicians, tickets, addTechnician, updateTechnician, deleteTechnician, openModal, closeModal, modals } =
     useAppStore();
 
   const [search, setSearch] = useState("");
@@ -59,6 +60,7 @@ export default function TechniciansPage() {
   const [selectedTech, setSelectedTech] = useState<Technician | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [editTech, setEditTech] = useState<Technician | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const [form, setForm] = useState(emptyForm);
 
@@ -139,14 +141,15 @@ export default function TechniciansPage() {
 
   const handleSubmit = () => {
     if (editTech) {
-      const store = useAppStore.getState();
-      const idx = store.technicians.findIndex((t) => t.id === editTech.id);
-      if (idx >= 0) {
-        const updated = { ...store.technicians[idx], ...form };
-        const newTechs = [...store.technicians];
-        newTechs[idx] = updated;
-        useAppStore.setState({ technicians: newTechs });
-      }
+      updateTechnician(editTech.id, {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        specialty: form.specialty,
+        zone: form.zone,
+        availability: form.availability,
+        active: form.active,
+      });
     } else {
       const newTech: Technician = {
         id: `t${generateId()}`,
@@ -166,6 +169,11 @@ export default function TechniciansPage() {
     closeModal("technicianForm");
     setForm({ ...emptyForm });
     setEditTech(null);
+  };
+
+  const handleDeleteTechnician = (id: string) => {
+    deleteTechnician(id);
+    setConfirmDelete(null);
   };
 
   const availColor = (avail: Technician["availability"]) => {
@@ -393,11 +401,11 @@ export default function TechniciansPage() {
                         Editar
                       </button>
                       <button
-                        className="btn-ghost text-xs"
-                        onClick={() => openProfile(tech)}
+                        className="btn-ghost text-xs text-danger hover:bg-red-50"
+                        onClick={() => setConfirmDelete(tech.id)}
                       >
-                        <Clock className="w-3.5 h-3.5" />
-                        Historial
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Eliminar
                       </button>
                     </div>
                   </div>
@@ -762,6 +770,41 @@ export default function TechniciansPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              className="modal-content max-w-sm p-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-text-primary mb-2">Eliminar Técnico</h3>
+              <p className="text-sm text-text-secondary mb-6">
+                ¿Estás seguro de que deseas eliminar este técnico? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>
+                  Cancelar
+                </button>
+                <button className="btn-danger" onClick={() => handleDeleteTechnician(confirmDelete)}>
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
               </div>
             </motion.div>
           </motion.div>

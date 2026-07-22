@@ -50,6 +50,7 @@ export default function ClientsPage() {
     quotations,
     addClient,
     updateClient,
+    deleteClient,
     openModal,
     closeModal,
     modals,
@@ -168,8 +169,7 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = (id: string) => {
-    const { updateClient: update } = useAppStore.getState();
-    update(id, { active: false } as Partial<Client>);
+    deleteClient(id);
     setConfirmDelete(null);
   };
 
@@ -789,8 +789,7 @@ export default function ClientsPage() {
                 Eliminar Cliente
               </h3>
               <p className="text-sm text-text-secondary mb-6">
-                ¿Estás seguro de que deseas eliminar este cliente? El cliente será
-                marcado como inactivo.
+                ¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.
               </p>
               <div className="flex justify-end gap-2">
                 <button

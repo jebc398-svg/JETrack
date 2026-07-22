@@ -59,11 +59,15 @@ interface AppState {
 
   addClient: (client: Client) => void;
   updateClient: (id: string, updates: Partial<Client>) => void;
+  deleteClient: (id: string) => void;
 
   addTechnician: (tech: Technician) => void;
+  updateTechnician: (id: string, updates: Partial<Technician>) => void;
+  deleteTechnician: (id: string) => void;
 
   addQuotation: (quotation: Quotation) => void;
   updateQuotation: (id: string, updates: Partial<Quotation>) => void;
+  deleteQuotation: (id: string) => void;
 
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
@@ -221,9 +225,27 @@ export const useAppStore = create<AppState>()(
         }
       }),
 
+    deleteClient: (id) =>
+      set((state) => {
+        state.clients = state.clients.filter((c) => c.id !== id);
+      }),
+
     addTechnician: (tech) =>
       set((state) => {
         state.technicians.push(tech);
+      }),
+
+    updateTechnician: (id, updates) =>
+      set((state) => {
+        const tech = state.technicians.find((t) => t.id === id);
+        if (tech) {
+          Object.assign(tech, updates);
+        }
+      }),
+
+    deleteTechnician: (id) =>
+      set((state) => {
+        state.technicians = state.technicians.filter((t) => t.id !== id);
       }),
 
     addQuotation: (quotation) =>
@@ -238,6 +260,11 @@ export const useAppStore = create<AppState>()(
           Object.assign(quotation, updates);
           quotation.updatedAt = new Date().toISOString();
         }
+      }),
+
+    deleteQuotation: (id) =>
+      set((state) => {
+        state.quotations = state.quotations.filter((q) => q.id !== id);
       }),
 
     markNotificationRead: (id) =>

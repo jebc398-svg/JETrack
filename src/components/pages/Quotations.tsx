@@ -64,13 +64,15 @@ const filterTabs: { id: FilterTab; label: string }[] = [
 ];
 
 export default function Quotations() {
-  const { quotations, clients, addQuotation, updateQuotation } = useAppStore();
+  const { quotations, clients, addQuotation, updateQuotation, deleteQuotation } = useAppStore();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("todas");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
   const [pdfQuotation, setPdfQuotation] = useState<Quotation | null>(null);
 
   const filteredQuotations = useMemo(() => {
@@ -113,9 +115,16 @@ export default function Quotations() {
     setShowDetailModal(false);
   };
 
-  const handleDelete = (id: string) => {
-    updateQuotation(id, { status: "rechazada" } as any);
+  const handleEditQuotation = (quotation: Quotation) => {
+    setEditingQuotation(quotation);
     setShowDetailModal(false);
+    setShowNewModal(true);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteQuotation(id);
+    setShowDetailModal(false);
+    setConfirmDelete(null);
   };
 
   const handleViewPdf = (quotation: Quotation) => {
@@ -360,7 +369,7 @@ export default function Quotations() {
                         <Download size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(quotation.id)}
+                        onClick={() => setConfirmDelete(quotation.id)}
                         className="btn-ghost p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]"
                         title="Eliminar"
                       >
@@ -383,6 +392,7 @@ export default function Quotations() {
             onClose={() => setShowDetailModal(false)}
             onStatusChange={handleStatusChange}
             onViewPdf={handleViewPdf}
+            onEdit={handleEditQuotation}
           />
         )}
       </AnimatePresence>
@@ -393,10 +403,16 @@ export default function Quotations() {
           <NewQuotationModal
             clients={clients}
             quotations={quotations}
-            onClose={() => setShowNewModal(false)}
+            onClose={() => { setShowNewModal(false); setEditingQuotation(null); }}
+            editingQuotation={editingQuotation}
             onSave={(q) => {
-              addQuotation(q);
+              if (editingQuotation) {
+                updateQuotation(editingQuotation.id, q);
+              } else {
+                addQuotation(q);
+              }
               setShowNewModal(false);
+              setEditingQuotation(null);
             }}
           />
         )}
@@ -412,6 +428,41 @@ export default function Quotations() {
           />
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              className="modal-content max-w-sm p-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">Eliminar Cotización</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+                ¿Estás seguro de que deseas eliminar esta cotización? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>
+                  Cancelar
+                </button>
+                <button className="btn-danger" onClick={() => handleDelete(confirmDelete)}>
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -423,11 +474,13 @@ function QuotationDetailModal({
   onClose,
   onStatusChange,
   onViewPdf,
+  onEdit,
 }: {
   quotation: Quotation;
   onClose: () => void;
   onStatusChange: (id: string, status: QuotationStatus) => void;
   onViewPdf: (q: Quotation) => void;
+  onEdit: (q: Quotation) => void;
 }) {
   const sc = statusColors[quotation.status];
 
@@ -613,7 +666,7 @@ function QuotationDetailModal({
                 <Send size={16} />
                 Enviar
               </button>
-              <button onClick={onClose} className="btn-secondary">
+              <button onClick={() => onEdit(quotation)} className="btn-secondary">
                 <Pencil size={16} />
                 Editar
               </button>
@@ -698,20 +751,24 @@ function NewQuotationModal({
   quotations,
   onClose,
   onSave,
+  editingQuotation,
 }: {
   clients: Client[];
   quotations: Quotation[];
   onClose: () => void;
   onSave: (q: Quotation) => void;
+  editingQuotation?: Quotation | null;
 }) {
-  const [title, setTitle] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [ticketId, setTicketId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [validUntil, setValidUntil] = useState("");
-  const [items, setItems] = useState<QuotationItem[]>([
-    { id: generateId(), description: "", quantity: 1, unitPrice: 0, total: 0 },
-  ]);
+  const [title, setTitle] = useState(editingQuotation?.title || "");
+  const [clientId, setClientId] = useState(editingQuotation?.clientId || "");
+  const [ticketId, setTicketId] = useState(editingQuotation?.ticketId || "");
+  const [notes, setNotes] = useState(editingQuotation?.notes || "");
+  const [validUntil, setValidUntil] = useState(editingQuotation?.validUntil || "");
+  const [items, setItems] = useState<QuotationItem[]>(
+    editingQuotation?.items || [
+      { id: generateId(), description: "", quantity: 1, unitPrice: 0, total: 0 },
+    ]
+  );
 
   const nextNumber = useMemo(() => {
     const year = new Date().getFullYear();
@@ -753,24 +810,42 @@ function NewQuotationModal({
   const handleSubmit = () => {
     if (!title || !clientId || !validUntil || items.every((i) => !i.description)) return;
     const client = clients.find((c: Client) => c.id === clientId);
-    const quotation: Quotation = {
-      id: `Q-${generateId()}`,
-      number: nextNumber,
-      title,
-      status: "borrador",
-      clientId,
-      clientName: client?.name || "",
-      items,
-      subtotal,
-      tax,
-      total,
-      validUntil,
-      notes: notes || undefined,
-      ticketId: ticketId || undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    onSave(quotation);
+    if (editingQuotation) {
+      const updated: Quotation = {
+        ...editingQuotation,
+        title,
+        clientId,
+        clientName: client?.name || "",
+        items,
+        subtotal,
+        tax,
+        total,
+        validUntil,
+        notes: notes || undefined,
+        ticketId: ticketId || undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      onSave(updated);
+    } else {
+      const quotation: Quotation = {
+        id: `Q-${generateId()}`,
+        number: nextNumber,
+        title,
+        status: "borrador",
+        clientId,
+        clientName: client?.name || "",
+        items,
+        subtotal,
+        tax,
+        total,
+        validUntil,
+        notes: notes || undefined,
+        ticketId: ticketId || undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      onSave(quotation);
+    }
   };
 
   return (
@@ -793,10 +868,10 @@ function NewQuotationModal({
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-5">
           <div>
             <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-              Nueva Cotización
+              {editingQuotation ? "Editar Cotización" : "Nueva Cotización"}
             </h2>
             <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
-              {nextNumber}
+              {editingQuotation ? editingQuotation.number : nextNumber}
             </p>
           </div>
           <button onClick={onClose} className="btn-ghost p-2">
@@ -988,7 +1063,7 @@ function NewQuotationModal({
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileText size={16} />
-            Crear Cotización
+            {editingQuotation ? "Guardar Cambios" : "Crear Cotización"}
           </button>
         </div>
       </motion.div>

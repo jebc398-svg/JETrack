@@ -103,15 +103,24 @@ export default function Reports() {
 
   const monthlyData = useMemo(() => {
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const last6 = months.slice(1, 7);
-    const values = [32, 28, 45, 38, 52, 47];
-    const max = Math.max(...values);
-    return last6.map((name, i) => ({
-      name,
+    const now = new Date();
+    const last6Months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      return { name: months[d.getMonth()], year: d.getFullYear(), month: d.getMonth() };
+    });
+    const values = last6Months.map(({ year, month }) => {
+      return filteredTickets.filter((t) => {
+        const d = new Date(t.scheduledDate);
+        return d.getFullYear() === year && d.getMonth() === month;
+      }).length;
+    });
+    const max = Math.max(...values, 1);
+    return last6Months.map((m, i) => ({
+      name: m.name,
       value: values[i],
-      percentage: max > 0 ? (values[i] / max) * 100 : 0,
+      percentage: (values[i] / max) * 100,
     }));
-  }, []);
+  }, [filteredTickets]);
 
   const statusDistribution = useMemo(() => {
     const counts: Record<string, number> = {};

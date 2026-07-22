@@ -115,6 +115,12 @@ export default function TicketsPage() {
 
   const newTicketModal = modals["newTicket"] || { open: false };
 
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+  const [statusChangeTicket, setStatusChangeTicket] = useState<Ticket | null>(null);
+  const [newStatus, setNewStatus] = useState<TicketStatus>("pending");
+  const [noteTicket, setNoteTicket] = useState<Ticket | null>(null);
+  const [noteContent, setNoteContent] = useState("");
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -299,6 +305,137 @@ export default function TicketsPage() {
     };
     addTicket(newTicket);
     closeModal("newTicket");
+  };
+
+  const handleOpenEditTicket = (ticket: Ticket) => {
+    setEditingTicket(ticket);
+    setForm({
+      title: ticket.title,
+      description: ticket.description,
+      clientId: ticket.clientId,
+      technicianId: ticket.technicianId || "",
+      serviceType: ticket.serviceType,
+      priority: ticket.priority,
+      scheduledDate: ticket.scheduledDate,
+      scheduledTime: ticket.scheduledTime,
+      estimatedDuration: ticket.estimatedDuration,
+      location: ticket.location,
+      notes: "",
+    });
+    openModal("editTicket");
+  };
+
+  const handleEditTicket = () => {
+    if (!editingTicket) return;
+    const client = clients.find((c) => c.id === form.clientId);
+    const tech = technicians.find((t) => t.id === form.technicianId);
+    updateTicket(editingTicket.id, {
+      title: form.title,
+      description: form.description,
+      clientId: form.clientId,
+      clientName: client?.name || "",
+      technicianId: form.technicianId || undefined,
+      technicianName: tech?.name || undefined,
+      serviceType: form.serviceType,
+      priority: form.priority,
+      scheduledDate: form.scheduledDate,
+      scheduledTime: form.scheduledTime,
+      estimatedDuration: form.estimatedDuration,
+      location: form.location,
+    });
+    closeModal("editTicket");
+    setEditingTicket(null);
+    if (selectedTicket?.id === editingTicket.id) {
+      const updated = tickets.find((t) => t.id === editingTicket.id);
+      if (updated) setSelectedTicket(updated);
+    }
+  };
+
+  const handleStatusChange = (ticket: Ticket, status: TicketStatus) => {
+    const now = new Date().toISOString();
+    const updates: Partial<Ticket> = { status };
+    if (status === "iniciado") updates.startedAt = now;
+    if (status === "pausado") updates.pausedAt = now;
+    if (status === "completado") updates.completedAt = now;
+    updateTicket(ticket.id, updates);
+    setStatusChangeTicket(null);
+    if (selectedTicket?.id === ticket.id) {
+      setSelectedTicket({ ...ticket, ...updates });
+    }
+  };
+
+  const handleAddNote = (ticket: Ticket) => {
+    if (!noteContent.trim()) return;
+    const now = new Date().toISOString();
+    const newNote = {
+      id: generateId(),
+      content: noteContent.trim(),
+      author: "María López",
+      authorRole: "admin" as const,
+      createdAt: now,
+      isInternal: false,
+    };
+    updateTicket(ticket.id, {
+      notes: [...ticket.notes, newNote],
+    });
+    setNoteContent("");
+    setNoteTicket(null);
+    if (selectedTicket?.id === ticket.id) {
+      setSelectedTicket({ ...ticket, notes: [...ticket.notes, newNote] });
+    }
+  };
+
+  const handleDownloadPdf = (ticket: Ticket) => {
+    import("jspdf").then(({ jsPDF }) => {
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.setTextColor(29, 78, 216);
+      doc.text("JETrack - Field Service", 20, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text("Reporte de Ticket", 20, 28);
+      doc.setDrawColor(29, 78, 216);
+      doc.line(20, 32, 190, 32);
+      let y = 42;
+      const addLine = (label: string, value: string) => {
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(label, 20, y);
+        doc.setTextColor(30);
+        doc.text(value, 70, y);
+        y += 8;
+      };
+      addLine("ID:", ticket.id);
+      addLine("Título:", ticket.title);
+      addLine("Descripción:", ticket.description);
+      addLine("Estado:", statusLabels[ticket.status]);
+      addLine("Prioridad:", priorityLabels[ticket.priority]);
+      addLine("Cliente:", ticket.clientName);
+      addLine("Técnico:", ticket.technicianName || "Sin asignar");
+      addLine("Tipo de Servicio:", ticket.serviceType);
+      addLine("Ubicación:", ticket.location);
+      addLine("Fecha Programada:", `${ticket.scheduledDate} ${ticket.scheduledTime}`);
+      addLine("Duración Estimada:", `${ticket.estimatedDuration} min`);
+      addLine("Creado:", formatDateTime(ticket.createdAt));
+      if (ticket.completedAt) addLine("Completado:", formatDateTime(ticket.completedAt));
+      y += 5;
+      if (ticket.notes.length > 0) {
+        doc.setFontSize(11);
+        doc.setTextColor(30);
+        doc.text("Notas:", 20, y);
+        y += 8;
+        ticket.notes.forEach((note) => {
+          doc.setFontSize(8);
+          doc.setTextColor(100);
+          doc.text(`[${note.author}] ${note.content}`, 20, y);
+          y += 6;
+        });
+      }
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Generado el ${new Date().toLocaleDateString("es-MX")}`, 20, 280);
+      doc.save(`ticket_${ticket.id}.pdf`);
+    });
   };
 
   const handleDeleteTicket = (id: string) => {
@@ -571,7 +708,7 @@ export default function TicketsPage() {
                             <button
                               className="btn-ghost p-1.5"
                               title="Editar"
-                              onClick={() => openModal("editTicket", ticket)}
+                              onClick={() => handleOpenEditTicket(ticket)}
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
@@ -839,19 +976,15 @@ export default function TicketsPage() {
 
               {/* Footer Actions */}
               <div className="sticky bottom-0 bg-white border-t border-border px-4 py-3 sm:px-6 sm:py-4 flex flex-wrap gap-2">
-                <button className="btn-secondary">
+                <button className="btn-secondary" onClick={() => { setStatusChangeTicket(selectedTicket); setNewStatus(selectedTicket.status); }}>
                   <CircleDot className="w-4 h-4" />
                   Cambiar Estado
                 </button>
-                <button className="btn-secondary">
-                  <ImageIcon className="w-4 h-4" />
-                  Subir Foto
-                </button>
-                <button className="btn-secondary">
+                <button className="btn-secondary" onClick={() => setNoteTicket(selectedTicket)}>
                   <PenLine className="w-4 h-4" />
                   Agregar Nota
                 </button>
-                <button className="btn-secondary">
+                <button className="btn-secondary" onClick={() => handleDownloadPdf(selectedTicket)}>
                   <Download className="w-4 h-4" />
                   Descargar PDF
                 </button>
@@ -1027,6 +1160,174 @@ export default function TicketsPage() {
                 <button className="btn-primary" onClick={handleCreateTicket}>
                   <Plus className="w-4 h-4" />
                   Crear Ticket
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Ticket Modal */}
+      <AnimatePresence>
+        {modals["editTicket"]?.open && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => { closeModal("editTicket"); setEditingTicket(null); }}
+          >
+            <motion.div
+              className="modal-content max-w-lg p-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-bold text-text-primary">Editar Ticket</h2>
+                <button className="btn-ghost p-1" onClick={() => { closeModal("editTicket"); setEditingTicket(null); }}>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                <FormField label="Título">
+                  <input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                </FormField>
+                <FormField label="Descripción">
+                  <textarea className="input-field min-h-[80px] resize-none" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </FormField>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="Cliente">
+                    <select className="select-field" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
+                      <option value="">Seleccionar cliente</option>
+                      {clients.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                    </select>
+                  </FormField>
+                  <FormField label="Técnico">
+                    <select className="select-field" value={form.technicianId} onChange={(e) => setForm({ ...form, technicianId: e.target.value })}>
+                      <option value="">Sin asignar</option>
+                      {technicians.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                    </select>
+                  </FormField>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="Tipo de Servicio">
+                    <select className="select-field" value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value })}>
+                      <option value="">Seleccionar servicio</option>
+                      {serviceTypes.map((s) => (<option key={s} value={s}>{s}</option>))}
+                    </select>
+                  </FormField>
+                  <FormField label="Prioridad">
+                    <select className="select-field" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Ticket["priority"] })}>
+                      {Object.entries(priorityLabels).map(([val, label]) => (<option key={val} value={val}>{label}</option>))}
+                    </select>
+                  </FormField>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="Fecha Programada">
+                    <input type="date" className="input-field" value={form.scheduledDate} onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })} />
+                  </FormField>
+                  <FormField label="Hora Programada">
+                    <input type="time" className="input-field" value={form.scheduledTime} onChange={(e) => setForm({ ...form, scheduledTime: e.target.value })} />
+                  </FormField>
+                </div>
+                <FormField label="Duración Estimada (minutos)">
+                  <input type="number" className="input-field" min={15} step={15} value={form.estimatedDuration} onChange={(e) => setForm({ ...form, estimatedDuration: Number(e.target.value) })} />
+                </FormField>
+                <FormField label="Ubicación">
+                  <input className="input-field" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+                </FormField>
+              </div>
+              <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-border">
+                <button className="btn-secondary" onClick={() => { closeModal("editTicket"); setEditingTicket(null); }}>Cancelar</button>
+                <button className="btn-primary" onClick={handleEditTicket}>
+                  <Pencil className="w-4 h-4" />
+                  Guardar Cambios
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Status Change Modal */}
+      <AnimatePresence>
+        {statusChangeTicket && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setStatusChangeTicket(null)}
+          >
+            <motion.div
+              className="modal-content max-w-sm p-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-text-primary mb-2">Cambiar Estado</h3>
+              <p className="text-sm text-text-secondary mb-4">
+                Ticket <strong>{statusChangeTicket.id}</strong> — {statusChangeTicket.title}
+              </p>
+              <div className="space-y-2 mb-6">
+                {(Object.entries(statusLabels) as [TicketStatus, string][]).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => handleStatusChange(statusChangeTicket, val)}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      statusChangeTicket.status === val
+                        ? "bg-primary-100 text-primary-700 ring-2 ring-primary-300"
+                        : "hover:bg-surface-tertiary text-text-secondary"
+                    }`}
+                  >
+                    <span className={`chip chip-${val} mr-2`}>{label}</span>
+                    {statusChangeTicket.status === val && <span className="text-xs text-primary-500">(actual)</span>}
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <button className="btn-secondary" onClick={() => setStatusChangeTicket(null)}>Cancelar</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Note Modal */}
+      <AnimatePresence>
+        {noteTicket && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => { setNoteTicket(null); setNoteContent(""); }}
+          >
+            <motion.div
+              className="modal-content max-w-sm p-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-text-primary mb-2">Agregar Nota</h3>
+              <p className="text-sm text-text-secondary mb-4">
+                Ticket <strong>{noteTicket.id}</strong>
+              </p>
+              <textarea
+                className="input-field min-h-[100px] resize-none mb-4"
+                placeholder="Escribe una nota..."
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <button className="btn-secondary" onClick={() => { setNoteTicket(null); setNoteContent(""); }}>Cancelar</button>
+                <button className="btn-primary" onClick={() => handleAddNote(noteTicket)} disabled={!noteContent.trim()}>
+                  <PenLine className="w-4 h-4" />
+                  Agregar
                 </button>
               </div>
             </motion.div>
