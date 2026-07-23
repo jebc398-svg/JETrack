@@ -15,6 +15,7 @@ import Technicians from "@/components/pages/Technicians";
 import Reports from "@/components/pages/Reports";
 import Settings from "@/components/pages/Settings";
 import NewTicketModal from "@/components/NewTicketModal";
+import AIChatButton from "@/components/AIChatButton";
 
 const allowedPagesByRole: Record<string, string[]> = {
   admin: ["dashboard", "tickets", "calendario", "cotizaciones", "clientes", "tecnicos", "reportes", "configuracion"],
@@ -135,6 +136,7 @@ export default function Home() {
       </div>
 
       <NewTicketModal />
+      <AIChatButton />
     </div>
   );
 }
