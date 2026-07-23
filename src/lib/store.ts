@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type {
   Client,
@@ -10,11 +11,7 @@ import type {
   UserRole,
 } from "./types";
 import {
-  mockClients,
   mockTechnicians,
-  mockTickets,
-  mockQuotations,
-  mockNotifications,
 } from "./data";
 
 export interface TicketFilters {
@@ -133,173 +130,185 @@ function clearSession() {
 const initialSession = typeof window !== "undefined" ? loadSession() : null;
 
 export const useAppStore = create<AppState>()(
-  immer((set) => ({
-    isAuthenticated: initialSession?.isAuthenticated ?? false,
-    user: initialSession?.user ?? { ...emptyUser },
+  persist(
+    immer((set) => ({
+      isAuthenticated: initialSession?.isAuthenticated ?? false,
+      user: initialSession?.user ?? { ...emptyUser },
 
-    sidebarOpen: true,
-    mobileSidebarOpen: false,
-    activePage: "dashboard",
+      sidebarOpen: true,
+      mobileSidebarOpen: false,
+      activePage: "dashboard",
 
-    tickets: mockTickets,
-    clients: mockClients,
-    technicians: mockTechnicians,
-    quotations: mockQuotations,
-    notifications: mockNotifications,
+      tickets: [],
+      clients: [],
+      technicians: mockTechnicians,
+      quotations: [],
+      notifications: [],
 
-    ticketFilters: { ...defaultFilters },
-    modals: {},
+      ticketFilters: { ...defaultFilters },
+      modals: {},
 
-    login: (email, name, role, userId) =>
-      set((state) => {
-        const id = userId || email.split("@")[0];
-        state.isAuthenticated = true;
-        state.user = {
-          id,
-          name,
-          email,
-          role: role as UserRole,
-          avatar: undefined,
-          phone: "",
-          active: true,
-        };
-        state.activePage = "dashboard";
-        saveSession(state.user);
+      login: (email, name, role, userId) =>
+        set((state) => {
+          const id = userId || email.split("@")[0];
+          state.isAuthenticated = true;
+          state.user = {
+            id,
+            name,
+            email,
+            role: role as UserRole,
+            avatar: undefined,
+            phone: "",
+            active: true,
+          };
+          state.activePage = "dashboard";
+          saveSession(state.user);
+        }),
+
+      logout: () =>
+        set((state) => {
+          state.isAuthenticated = false;
+          state.user = { ...emptyUser };
+          state.activePage = "dashboard";
+          state.mobileSidebarOpen = false;
+          state.modals = {};
+          clearSession();
+        }),
+
+      setActivePage: (page) =>
+        set((state) => {
+          state.activePage = page;
+          state.mobileSidebarOpen = false;
+        }),
+
+      toggleSidebar: () =>
+        set((state) => {
+          state.sidebarOpen = !state.sidebarOpen;
+        }),
+
+      setMobileSidebar: (open) =>
+        set((state) => {
+          state.mobileSidebarOpen = open;
+        }),
+
+      addTicket: (ticket) =>
+        set((state) => {
+          state.tickets.push(ticket);
+        }),
+
+      updateTicket: (id, updates) =>
+        set((state) => {
+          const ticket = state.tickets.find((t) => t.id === id);
+          if (ticket) {
+            Object.assign(ticket, updates);
+            ticket.updatedAt = new Date().toISOString();
+          }
+        }),
+
+      deleteTicket: (id) =>
+        set((state) => {
+          state.tickets = state.tickets.filter((t) => t.id !== id);
+        }),
+
+      addClient: (client) =>
+        set((state) => {
+          state.clients.push(client);
+        }),
+
+      updateClient: (id, updates) =>
+        set((state) => {
+          const client = state.clients.find((c) => c.id === id);
+          if (client) {
+            Object.assign(client, updates);
+          }
+        }),
+
+      deleteClient: (id) =>
+        set((state) => {
+          state.clients = state.clients.filter((c) => c.id !== id);
+        }),
+
+      addTechnician: (tech) =>
+        set((state) => {
+          state.technicians.push(tech);
+        }),
+
+      updateTechnician: (id, updates) =>
+        set((state) => {
+          const tech = state.technicians.find((t) => t.id === id);
+          if (tech) {
+            Object.assign(tech, updates);
+          }
+        }),
+
+      deleteTechnician: (id) =>
+        set((state) => {
+          state.technicians = state.technicians.filter((t) => t.id !== id);
+        }),
+
+      addQuotation: (quotation) =>
+        set((state) => {
+          state.quotations.push(quotation);
+        }),
+
+      updateQuotation: (id, updates) =>
+        set((state) => {
+          const quotation = state.quotations.find((q) => q.id === id);
+          if (quotation) {
+            Object.assign(quotation, updates);
+            quotation.updatedAt = new Date().toISOString();
+          }
+        }),
+
+      deleteQuotation: (id) =>
+        set((state) => {
+          state.quotations = state.quotations.filter((q) => q.id !== id);
+        }),
+
+      markNotificationRead: (id) =>
+        set((state) => {
+          const notif = state.notifications.find((n) => n.id === id);
+          if (notif) {
+            notif.read = true;
+          }
+        }),
+
+      markAllNotificationsRead: () =>
+        set((state) => {
+          state.notifications.forEach((n) => {
+            n.read = true;
+          });
+        }),
+
+      setTicketFilters: (filters) =>
+        set((state) => {
+          Object.assign(state.ticketFilters, filters);
+        }),
+
+      resetTicketFilters: () =>
+        set((state) => {
+          state.ticketFilters = { ...defaultFilters };
+        }),
+
+      openModal: (name, data) =>
+        set((state) => {
+          state.modals[name] = { open: true, data };
+        }),
+
+      closeModal: (name) =>
+        set((state) => {
+          state.modals[name] = { open: false };
+        }),
+    })),
+    {
+      name: "jetrack-data",
+      partialize: (state) => ({
+        tickets: state.tickets,
+        clients: state.clients,
+        technicians: state.technicians,
+        quotations: state.quotations,
+        notifications: state.notifications,
       }),
-
-    logout: () =>
-      set((state) => {
-        state.isAuthenticated = false;
-        state.user = { ...emptyUser };
-        state.activePage = "dashboard";
-        state.mobileSidebarOpen = false;
-        state.modals = {};
-        clearSession();
-      }),
-
-    setActivePage: (page) =>
-      set((state) => {
-        state.activePage = page;
-        state.mobileSidebarOpen = false;
-      }),
-
-    toggleSidebar: () =>
-      set((state) => {
-        state.sidebarOpen = !state.sidebarOpen;
-      }),
-
-    setMobileSidebar: (open) =>
-      set((state) => {
-        state.mobileSidebarOpen = open;
-      }),
-
-    addTicket: (ticket) =>
-      set((state) => {
-        state.tickets.push(ticket);
-      }),
-
-    updateTicket: (id, updates) =>
-      set((state) => {
-        const ticket = state.tickets.find((t) => t.id === id);
-        if (ticket) {
-          Object.assign(ticket, updates);
-          ticket.updatedAt = new Date().toISOString();
-        }
-      }),
-
-    deleteTicket: (id) =>
-      set((state) => {
-        state.tickets = state.tickets.filter((t) => t.id !== id);
-      }),
-
-    addClient: (client) =>
-      set((state) => {
-        state.clients.push(client);
-      }),
-
-    updateClient: (id, updates) =>
-      set((state) => {
-        const client = state.clients.find((c) => c.id === id);
-        if (client) {
-          Object.assign(client, updates);
-        }
-      }),
-
-    deleteClient: (id) =>
-      set((state) => {
-        state.clients = state.clients.filter((c) => c.id !== id);
-      }),
-
-    addTechnician: (tech) =>
-      set((state) => {
-        state.technicians.push(tech);
-      }),
-
-    updateTechnician: (id, updates) =>
-      set((state) => {
-        const tech = state.technicians.find((t) => t.id === id);
-        if (tech) {
-          Object.assign(tech, updates);
-        }
-      }),
-
-    deleteTechnician: (id) =>
-      set((state) => {
-        state.technicians = state.technicians.filter((t) => t.id !== id);
-      }),
-
-    addQuotation: (quotation) =>
-      set((state) => {
-        state.quotations.push(quotation);
-      }),
-
-    updateQuotation: (id, updates) =>
-      set((state) => {
-        const quotation = state.quotations.find((q) => q.id === id);
-        if (quotation) {
-          Object.assign(quotation, updates);
-          quotation.updatedAt = new Date().toISOString();
-        }
-      }),
-
-    deleteQuotation: (id) =>
-      set((state) => {
-        state.quotations = state.quotations.filter((q) => q.id !== id);
-      }),
-
-    markNotificationRead: (id) =>
-      set((state) => {
-        const notif = state.notifications.find((n) => n.id === id);
-        if (notif) {
-          notif.read = true;
-        }
-      }),
-
-    markAllNotificationsRead: () =>
-      set((state) => {
-        state.notifications.forEach((n) => {
-          n.read = true;
-        });
-      }),
-
-    setTicketFilters: (filters) =>
-      set((state) => {
-        Object.assign(state.ticketFilters, filters);
-      }),
-
-    resetTicketFilters: () =>
-      set((state) => {
-        state.ticketFilters = { ...defaultFilters };
-      }),
-
-    openModal: (name, data) =>
-      set((state) => {
-        state.modals[name] = { open: true, data };
-      }),
-
-    closeModal: (name) =>
-      set((state) => {
-        state.modals[name] = { open: false };
-      }),
-  }))
+    }
+  )
 );
