@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const SYSTEM_PROMPT = `Eres el asistente virtual de JETrack, una plataforma de gestión de servicios técnicos y field service. 
+const BASE_SYSTEM = `Eres el asistente virtual de JETrack, una plataforma de gestión de servicios técnicos y field service. 
 Tu nombre es JETrack AI.
+
+IMPORTANTE: Tienes acceso a los datos reales del sistema que se te proporcionan abajo como "CONTEXTO DE DATOS DEL SISTEMA". Usa esos datos para responder preguntas sobre tickets, clientes, cotizaciones, técnicos y métricas. Responde SIEMPRE con datos reales, nunca inventes información.
+
+Si el usuario pregunta por datos que existen en el contexto, respóndelos con precisión usando los números y detalles proporcionados.
 
 Puedes ayudar con:
 - Consultas sobre tickets de servicio, estados, prioridades
@@ -12,9 +16,8 @@ Puedes ayudar con:
 - Calendario y programación de trabajos
 - Consejos de productividad y mejores prácticas para gestión de servicios técnicos
 
-Responde siempre en español, sé conciso, profesional y útil. 
-Si no tienes información específica de los datos del usuario, responde con consejos generales sobre la gestión de servicios técnicos.
-Máximo 3-4 oraciones por respuesta para mantener la conversación fluida.`;
+Responde siempre en español, sé conciso, profesional y útil.
+Máximo 4-5 oraciones por respuesta para mantener la conversación fluida.`;
 
 const MODELS = [
   "google/gemini-2.0-flash-001:free",
@@ -28,16 +31,17 @@ export async function POST(request: NextRequest) {
 
   if (!apiKey || apiKey === "sk-or-v1-your-key-here") {
     return NextResponse.json(
-      {
-        error: "API key no configurada.",
-        fallback: true,
-      },
+      { error: "API key no configurada.", fallback: true },
       { status: 503 }
     );
   }
 
   try {
-    const { messages } = await request.json();
+    const { messages, dataContext } = await request.json();
+
+    const systemPrompt = dataContext
+      ? `${BASE_SYSTEM}\n\n--- CONTEXTO DE DATOS DEL SISTEMA ---\n${dataContext}\n--- FIN DEL CONTEXTO ---`
+      : BASE_SYSTEM;
 
     let lastError = "";
 
@@ -52,9 +56,9 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           model,
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
           temperature: 0.7,
-          max_tokens: 300,
+          max_tokens: 500,
         }),
       });
 
@@ -72,9 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      {
-        error: `Ningún modelo disponible. Último error: ${lastError.substring(0, 200)}`,
-      },
+      { error: `Error al conectar con la IA: ${lastError.substring(0, 200)}` },
       { status: 502 }
     );
   } catch (error) {

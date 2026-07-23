@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, Sparkles, User } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { buildDataContext } from "@/lib/ai-context";
 
 type Message = {
   role: "user" | "assistant";
@@ -22,6 +24,11 @@ export default function AIChatButton() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const tickets = useAppStore((s) => s.tickets);
+  const clients = useAppStore((s) => s.clients);
+  const quotations = useAppStore((s) => s.quotations);
+  const technicians = useAppStore((s) => s.technicians);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,6 +54,7 @@ export default function AIChatButton() {
     setLoading(true);
 
     try {
+      const dataContext = buildDataContext({ tickets, clients, quotations, technicians });
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,6 +63,7 @@ export default function AIChatButton() {
             role: m.role,
             content: m.content,
           })),
+          dataContext,
         }),
       });
 
