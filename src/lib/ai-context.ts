@@ -1,5 +1,22 @@
 import type { Ticket, Client, Quotation, Technician } from "./types";
 
+const statusLabels: Record<string, string> = {
+  pending: "Pendiente",
+  scheduled: "Programado",
+  en_camino: "En camino",
+  iniciado: "Iniciado",
+  pausado: "Pausado",
+  completado: "Completado",
+  cancelado: "Cancelado",
+};
+
+const prioLabels: Record<string, string> = {
+  urgente: "Urgente",
+  alta: "Alta",
+  media: "Media",
+  baja: "Baja",
+};
+
 export function buildDataContext(payload: {
   tickets: Ticket[];
   clients: Client[];
@@ -7,129 +24,77 @@ export function buildDataContext(payload: {
   technicians: Technician[];
 }): string {
   const { tickets, clients, quotations, technicians } = payload;
-
-  const statusCount: Record<string, number> = {};
-  tickets.forEach((t) => {
-    statusCount[t.status] = (statusCount[t.status] || 0) + 1;
-  });
-
-  const priorityCount: Record<string, number> = {};
-  tickets.forEach((t) => {
-    priorityCount[t.priority] = (priorityCount[t.priority] || 0) + 1;
-  });
-
-  const techLoad: Record<string, number> = {};
-  tickets.forEach((t) => {
-    if (t.technicianName) {
-      techLoad[t.technicianName] = (techLoad[t.technicianName] || 0) + 1;
-    }
-  });
-
-  const clientTicketCount: Record<string, number> = {};
-  tickets.forEach((t) => {
-    if (t.clientName) {
-      clientTicketCount[t.clientName] =
-        (clientTicketCount[t.clientName] || 0) + 1;
-    }
-  });
-
-  const qStatusCount: Record<string, number> = {};
-  quotations.forEach((q) => {
-    qStatusCount[q.status] = (qStatusCount[q.status] || 0) + 1;
-  });
-
+  const lines: string[] = [];
   const today = new Date().toISOString().split("T")[0];
+
+  lines.push("=== DATOS COMPLETOS DEL SISTEMA JETRACK ===");
+  lines.push(`Fecha de consulta: ${today}`);
+
+  lines.push(`\nRESUMEN: ${tickets.length} tickets, ${clients.length} clientes, ${quotations.length} cotizaciones, ${technicians.length} técnicos`);
+
+  const totalRevenue = quotations
+    .filter((q) => q.status === "aprobada" || q.status === "facturada")
+    .reduce((sum, q) => sum + q.total, 0);
+  lines.push(`Ingresos totales (cotizaciones aprobadas/facturadas): $${totalRevenue.toLocaleString("es-MX")}`);
+
+  if (tickets.length > 0) {
+    lines.push(`\n=== LISTADO COMPLETO DE TICKETS ===`);
+    tickets.forEach((t) => {
+      const notes = t.notes && t.notes.length > 0
+        ? ` | Notas: ${t.notes.map((n) => n.content).join("; ")}`
+        : "";
+      lines.push(
+        `- [${t.id}] "${t.title}" | Cliente: ${t.clientName || "N/A"} | Técnico: ${t.technicianName || "Sin asignar"} | Estado: ${statusLabels[t.status] || t.status} | Prioridad: ${prioLabels[t.priority] || t.priority} | Fecha programada: ${t.scheduledDate} ${t.scheduledTime || ""} | Duración est.: ${t.estimatedDuration}min | Servicio: ${t.serviceType || "N/A"} | Ubicación: ${t.location || "N/A"} | Creado: ${t.createdAt}${notes}`
+      );
+    });
+  }
+
+  if (clients.length > 0) {
+    lines.push(`\n=== LISTADO COMPLETO DE CLIENTES ===`);
+    clients.forEach((c) => {
+      const clientTickets = tickets.filter((t) => t.clientId === c.id);
+      const clientQuotations = quotations.filter((q) => q.clientId === c.id);
+      lines.push(
+        `- [${c.id}] ${c.name} | Email: ${c.email || "N/A"} | Tel: ${c.phone || "N/A"} | Empresa: ${c.company || "N/A"} | Tickets: ${clientTickets.length} | Cotizaciones: ${clientQuotations.length}`
+      );
+    });
+  }
+
+  if (quotations.length > 0) {
+    lines.push(`\n=== LISTADO COMPLETO DE COTIZACIONES ===`);
+    quotations.forEach((q) => {
+      const items = q.items.map((i) => `${i.description} x${i.quantity}=$${i.total}`).join("; ");
+      lines.push(
+        `- [${q.id}] #${q.number} "${q.title}" | Cliente: ${q.clientName || "N/A"} | Estado: ${q.status} | Total: $${q.total.toLocaleString("es-MX")} | Válido hasta: ${q.validUntil} | Ticket vinculado: ${q.ticketId || "N/A"} | Items: ${items || "N/A"}`
+      );
+    });
+  }
+
+  if (technicians.length > 0) {
+    lines.push(`\n=== LISTADO COMPLETO DE TÉCNICOS ===`);
+    technicians.forEach((t) => {
+      const techTickets = tickets.filter((tk) => tk.technicianId === t.id);
+      const activeTickets = techTickets.filter(
+        (tk) => !["completado", "cancelado"].includes(tk.status)
+      );
+      lines.push(
+        `- [${t.id}] ${t.name} | Especialidad: ${t.specialty} | Zona: ${t.zone} | Disponibilidad: ${t.availability} | Rating: ${t.rating}/5 | Trabajos completados: ${t.completedJobs} | Tickets activos: ${activeTickets.length}`
+      );
+    });
+  }
+
   const overdueTickets = tickets.filter(
     (t) =>
       t.scheduledDate < today &&
       !["completado", "cancelado"].includes(t.status)
   );
-  const completedToday = tickets.filter(
-    (t) => t.completedAt && t.completedAt.startsWith(today)
-  );
-
-  const totalRevenue = quotations
-    .filter((q) => q.status === "aprobada" || q.status === "facturada")
-    .reduce((sum, q) => sum + q.total, 0);
-
-  const lines: string[] = [];
-
-  lines.push(`RESUMEN GENERAL:`);
-  lines.push(`- Total tickets: ${tickets.length}`);
-  lines.push(`- Total clientes: ${clients.length}`);
-  lines.push(`- Total cotizaciones: ${quotations.length}`);
-  lines.push(`- Total técnicos: ${technicians.length}`);
-  lines.push(`- Ingresos por cotizaciones aprobadas/facturadas: $${totalRevenue.toLocaleString("es-MX")}`);
-
-  lines.push(`\nTICKETS POR ESTADO:`);
-  const statusLabels: Record<string, string> = {
-    pending: "Pendiente",
-    scheduled: "Programado",
-    en_camino: "En camino",
-    iniciado: "Iniciado",
-    pausado: "Pausado",
-    completado: "Completado",
-    cancelado: "Cancelado",
-  };
-  Object.entries(statusCount).forEach(([status, count]) => {
-    lines.push(`- ${statusLabels[status] || status}: ${count}`);
-  });
-
-  lines.push(`\nTICKETS POR PRIORIDAD:`);
-  const prioLabels: Record<string, string> = {
-    urgente: "Urgente",
-    alta: "Alta",
-    media: "Media",
-    baja: "Baja",
-  };
-  Object.entries(priorityCount).forEach(([prio, count]) => {
-    lines.push(`- ${prioLabels[prio] || prio}: ${count}`);
-  });
-
-  if (Object.keys(techLoad).length > 0) {
-    lines.push(`\nCARGA POR TÉCNICO (tickets asignados):`);
-    Object.entries(techLoad)
-      .sort((a, b) => b[1] - a[1])
-      .forEach(([name, count]) => {
-        lines.push(`- ${name}: ${count} tickets`);
-      });
-  }
-
-  if (Object.keys(clientTicketCount).length > 0) {
-    lines.push(`\nCLIENTES CON MÁS ACTIVIDAD:`);
-    Object.entries(clientTicketCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .forEach(([name, count]) => {
-        lines.push(`- ${name}: ${count} tickets`);
-      });
-  }
-
   if (overdueTickets.length > 0) {
-    lines.push(`\nTICKETS ATRASADOS (${overdueTickets.length}):`);
-    overdueTickets.slice(0, 5).forEach((t) => {
+    lines.push(`\n=== TICKETS ATRASADOS (${overdueTickets.length}) ===`);
+    overdueTickets.forEach((t) => {
       lines.push(
-        `- ${t.id} "${t.title}" — programado para ${t.scheduledDate} [${statusLabels[t.status] || t.status}]`
+        `- ${t.id} "${t.title}" → Cliente: ${t.clientName} | Técnico: ${t.technicianName || "Sin asignar"} | Programado: ${t.scheduledDate} | Estado: ${statusLabels[t.status]}`
       );
     });
-  }
-
-  if (completedToday.length > 0) {
-    lines.push(`\nCOMPLETADOS HOY: ${completedToday.length}`);
-  }
-
-  lines.push(`\nCOTIZACIONES POR ESTADO:`);
-  Object.entries(qStatusCount).forEach(([status, count]) => {
-    lines.push(`- ${status}: ${count}`);
-  });
-
-  const techDetails = technicians.map(
-    (t) =>
-      `- ${t.name} (${t.specialty}, zona ${t.zone}, rating ${t.rating}, ${t.availability})`
-  );
-  if (techDetails.length > 0) {
-    lines.push(`\nTÉCNICOS DISPONIBLES:`);
-    techDetails.forEach((l) => lines.push(l));
   }
 
   return lines.join("\n");
