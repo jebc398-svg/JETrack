@@ -12,23 +12,27 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string, timezone?: string): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  const tz = timezone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Mexico_City");
   return d.toLocaleDateString("es-MX", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: tz,
   });
 }
 
-export function formatDateTime(date: Date | string): string {
+export function formatDateTime(date: Date | string, timezone?: string): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  const tz = timezone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Mexico_City");
   return d.toLocaleDateString("es-MX", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: tz,
   });
 }
 

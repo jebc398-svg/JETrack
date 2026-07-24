@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SystemUser } from "@/lib/types";
@@ -173,6 +173,16 @@ export default function SettingsPage() {
     language: "es",
   });
 
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const savedLogo = localStorage.getItem("jetrack_company_logo");
+    if (savedLogo) setCompanyLogo(savedLogo);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) setGeneralForm((prev) => ({ ...prev, timezone: tz }));
+  }, []);
+
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -204,6 +214,28 @@ export default function SettingsPage() {
 
   function handleGeneralChange(field: string, value: string) {
     setGeneralForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("El archivo excede 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setCompanyLogo(dataUrl);
+      localStorage.setItem("jetrack_company_logo", dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeLogo() {
+    setCompanyLogo(null);
+    localStorage.removeItem("jetrack_company_logo");
+    if (logoInputRef.current) logoInputRef.current.value = "";
   }
 
   function handleNotificationToggle(key: keyof typeof notifications) {
@@ -401,11 +433,44 @@ export default function SettingsPage() {
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Logo de la Empresa</label>
-                      <div className="border-2 border-dashed border-[var(--color-border)] rounded-xl p-8 text-center hover:border-[var(--color-primary-400)] transition-colors cursor-pointer">
-                        <Upload className="w-10 h-10 mx-auto text-[var(--color-text-tertiary)] mb-2" />
-                        <p className="text-sm text-[var(--color-text-secondary)]">Arrastra un archivo o haz clic para subir</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)] mt-1">PNG, JPG, SVG (Max. 2MB)</p>
-                      </div>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                      {companyLogo ? (
+                        <div className="flex items-center gap-5 p-5 bg-[var(--color-surface-secondary)] rounded-xl border border-[var(--color-border)]">
+                          <div className="w-24 h-24 rounded-xl bg-white border border-[var(--color-border)] shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                            <img src={companyLogo} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">Logo actual</p>
+                            <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">PNG, JPG o SVG — Max. 2MB</p>
+                            <div className="flex gap-2 mt-3">
+                              <button className="btn-secondary text-xs" onClick={() => logoInputRef.current?.click()}>
+                                <Upload className="w-3.5 h-3.5" />
+                                Cambiar
+                              </button>
+                              <button className="btn-ghost text-xs text-[var(--color-danger)]" onClick={removeLogo}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => logoInputRef.current?.click()}
+                          className="w-full border-2 border-dashed border-[var(--color-border)] rounded-xl p-8 text-center hover:border-[var(--color-primary-400)] hover:bg-[var(--color-surface-secondary)] transition-all cursor-pointer"
+                        >
+                          <Upload className="w-10 h-10 mx-auto text-[var(--color-text-tertiary)] mb-2" />
+                          <p className="text-sm text-[var(--color-text-secondary)]">Haz clic para subir el logo</p>
+                          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">PNG, JPG, SVG (Max. 2MB)</p>
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="mt-6 pt-4 border-t border-[var(--color-border)]">

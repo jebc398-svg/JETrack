@@ -35,6 +35,7 @@ interface AppState {
   sidebarOpen: boolean;
   mobileSidebarOpen: boolean;
   activePage: string;
+  timezone: string;
 
   tickets: Ticket[];
   clients: Client[];
@@ -49,6 +50,7 @@ interface AppState {
   login: (email: string, name: string, role: string, userId?: string) => void;
   logout: () => void;
   setActivePage: (page: string) => void;
+  setTimezone: (tz: string) => void;
   toggleSidebar: () => void;
   setMobileSidebar: (open: boolean) => void;
 
@@ -145,6 +147,7 @@ export const useAppStore = create<AppState>()(
       sidebarOpen: true,
       mobileSidebarOpen: false,
       activePage: "dashboard",
+      timezone: typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Mexico_City",
 
       tickets: [],
       clients: [],
@@ -194,7 +197,12 @@ export const useAppStore = create<AppState>()(
           state.mobileSidebarOpen = false;
         }),
 
-      toggleSidebar: () =>
+      setTimezone: (tz) =>
+      set((state) => {
+        state.timezone = tz;
+      }),
+
+    toggleSidebar: () =>
         set((state) => {
           state.sidebarOpen = !state.sidebarOpen;
         }),
