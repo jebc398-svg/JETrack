@@ -264,10 +264,14 @@ export default function Header({
               }}
               className="btn-ghost flex items-center gap-2.5 rounded-xl py-1.5 pl-1.5 pr-2 transition-all duration-200 hover:bg-black/5"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 shadow-md shadow-primary-500/25">
-                <span className="text-xs font-bold text-white drop-shadow-sm">
-                  {initials}
-                </span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 shadow-md shadow-primary-500/25 overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold text-white drop-shadow-sm">
+                    {initials}
+                  </span>
+                )}
               </div>
               <div className="hidden text-left md:block">
                 <p className="text-sm font-semibold leading-tight text-text-primary">
@@ -288,10 +292,14 @@ export default function Header({
               <div className="absolute right-0 top-full mt-3 w-64 scale-in overflow-hidden rounded-2xl border border-border-light bg-white/95 shadow-2xl backdrop-blur-xl">
                 <div className="border-b border-border-light px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
-                      <span className="text-sm font-bold text-white drop-shadow-sm">
-                        {initials}
-                      </span>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 shadow-lg shadow-primary-500/25 overflow-hidden">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold text-white drop-shadow-sm">
+                          {initials}
+                        </span>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-text-primary">

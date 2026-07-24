@@ -49,6 +49,7 @@ interface AppState {
 
   login: (email: string, name: string, role: string, userId?: string) => void;
   logout: () => void;
+  setAvatar: (dataUrl: string | null) => void;
   setActivePage: (page: string) => void;
   setTimezone: (tz: string) => void;
   toggleSidebar: () => void;
@@ -188,10 +189,16 @@ export const useAppStore = create<AppState>()(
           state.activePage = "dashboard";
           state.mobileSidebarOpen = false;
           state.modals = {};
-          clearSession();
-        }),
+        clearSession();
+      }),
 
-      setActivePage: (page) =>
+    setAvatar: (dataUrl) =>
+      set((state) => {
+        state.user.avatar = dataUrl || undefined;
+        saveSession(state.user);
+      }),
+
+    setActivePage: (page) =>
         set((state) => {
           state.activePage = page;
           state.mobileSidebarOpen = false;

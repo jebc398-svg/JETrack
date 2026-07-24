@@ -154,6 +154,9 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const users = useAppStore((s) => s.systemUsers);
   const addSystemUser = useAppStore((s) => s.addSystemUser);
+  const user = useAppStore((s) => s.user);
+  const setAvatar = useAppStore((s) => s.setAvatar);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const updateSystemUser = useAppStore((s) => s.updateSystemUser);
   const deleteSystemUser = useAppStore((s) => s.deleteSystemUser);
   const toggleSystemUserActive = useAppStore((s) => s.toggleSystemUserActive);
@@ -236,6 +239,25 @@ export default function SettingsPage() {
     setCompanyLogo(null);
     localStorage.removeItem("jetrack_company_logo");
     if (logoInputRef.current) logoInputRef.current.value = "";
+  }
+
+  function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("El archivo excede 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatar(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeAvatar() {
+    setAvatar(null);
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
   }
 
   function handleNotificationToggle(key: keyof typeof notifications) {
@@ -359,6 +381,51 @@ export default function SettingsPage() {
                     <Building className="w-5 h-5 text-[var(--color-primary-500)]" />
                     Información General
                   </h2>
+
+                  {/* Avatar Section */}
+                  <div className="flex items-center gap-5 mb-6 p-4 bg-[var(--color-surface-secondary)] rounded-xl">
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <div className="relative group">
+                      {user.avatar ? (
+                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-lg">
+                          <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#1d4ed8] to-[#60a5fa] flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                          {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+                      >
+                        <Upload className="w-5 h-5 text-white" />
+                      </button>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">Foto de perfil</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">PNG o JPG — Max. 2MB</p>
+                      <div className="flex gap-2 mt-2">
+                        <button className="btn-secondary text-xs" onClick={() => avatarInputRef.current?.click()}>
+                          <Upload className="w-3.5 h-3.5" />
+                          {user.avatar ? "Cambiar" : "Subir foto"}
+                        </button>
+                        {user.avatar && (
+                          <button className="btn-ghost text-xs text-[var(--color-danger)]" onClick={removeAvatar}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Nombre de la Empresa</label>

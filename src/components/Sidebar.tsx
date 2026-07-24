@@ -231,7 +231,7 @@ export default function Sidebar({
             width: "40px",
             height: "40px",
             borderRadius: "12px",
-            background: "linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)",
+            background: user.avatar ? "transparent" : "linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -239,10 +239,15 @@ export default function Sidebar({
             fontWeight: 700,
             color: "white",
             flexShrink: 0,
-            boxShadow: "0 2px 8px rgba(29, 78, 216, 0.2)",
+            boxShadow: user.avatar ? "none" : "0 2px 8px rgba(29, 78, 216, 0.2)",
+            overflow: "hidden",
           }}
         >
-          {initials}
+          {user.avatar ? (
+            <img src={user.avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            initials
+          )}
         </div>
         <div style={{ overflow: "hidden", flex: 1 }}>
           <div
