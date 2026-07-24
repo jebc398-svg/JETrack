@@ -7,6 +7,7 @@ import type {
   Ticket,
   Quotation,
   Notification,
+  SystemUser,
   User,
   UserRole,
 } from "./types";
@@ -40,6 +41,7 @@ interface AppState {
   technicians: Technician[];
   quotations: Quotation[];
   notifications: Notification[];
+  systemUsers: SystemUser[];
 
   ticketFilters: TicketFilters;
   modals: ModalState;
@@ -68,6 +70,11 @@ interface AppState {
 
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+
+  addSystemUser: (user: SystemUser) => void;
+  updateSystemUser: (id: string, updates: Partial<SystemUser>) => void;
+  deleteSystemUser: (id: string) => void;
+  toggleSystemUserActive: (id: string) => void;
 
   setTicketFilters: (filters: Partial<TicketFilters>) => void;
   resetTicketFilters: () => void;
@@ -144,6 +151,12 @@ export const useAppStore = create<AppState>()(
       technicians: mockTechnicians,
       quotations: [],
       notifications: [],
+      systemUsers: [
+        { id: "u1", name: "María López", email: "maria@jetrack.mx", password: "admin123", role: "admin", active: true, phone: "81-1234-5678" },
+        { id: "u2", name: "Carlos Mendoza", email: "carlos@jetrack.mx", password: "tech123", role: "technician", active: true, phone: "81-2345-6789" },
+        { id: "u3", name: "Roberto García", email: "roberto@jetrack.mx", password: "tech123", role: "technician", active: true, phone: "81-3456-7890" },
+        { id: "u4", name: "Ana Torres", email: "ana@jetrack.mx", password: "super123", role: "supervisor", active: true, phone: "81-4567-8901" },
+      ],
 
       ticketFilters: { ...defaultFilters },
       modals: {},
@@ -273,14 +286,36 @@ export const useAppStore = create<AppState>()(
           }
         }),
 
-      markAllNotificationsRead: () =>
-        set((state) => {
-          state.notifications.forEach((n) => {
-            n.read = true;
-          });
-        }),
+    markAllNotificationsRead: () =>
+      set((state) => {
+        state.notifications.forEach((n) => {
+          n.read = true;
+        });
+      }),
 
-      setTicketFilters: (filters) =>
+    addSystemUser: (user) =>
+      set((state) => {
+        state.systemUsers.push(user);
+      }),
+
+    updateSystemUser: (id, updates) =>
+      set((state) => {
+        const user = state.systemUsers.find((u) => u.id === id);
+        if (user) Object.assign(user, updates);
+      }),
+
+    deleteSystemUser: (id) =>
+      set((state) => {
+        state.systemUsers = state.systemUsers.filter((u) => u.id !== id);
+      }),
+
+    toggleSystemUserActive: (id) =>
+      set((state) => {
+        const user = state.systemUsers.find((u) => u.id === id);
+        if (user) user.active = !user.active;
+      }),
+
+    setTicketFilters: (filters) =>
         set((state) => {
           Object.assign(state.ticketFilters, filters);
         }),
@@ -308,6 +343,7 @@ export const useAppStore = create<AppState>()(
         technicians: state.technicians,
         quotations: state.quotations,
         notifications: state.notifications,
+        systemUsers: state.systemUsers,
       }),
     }
   )

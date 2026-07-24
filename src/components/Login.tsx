@@ -16,44 +16,9 @@ import { useAppStore } from "@/lib/store";
 import logo2 from "../logo2.png";
 import portada from "../portada.jpg";
 
-const validUsers: Record<
-  string,
-  { password: string; name: string; role: string; id: string }
-> = {
-  "maria@jetrack.mx": {
-    password: "admin123",
-    name: "María López",
-    role: "admin",
-    id: "u1",
-  },
-  "supervisor@jetrack.mx": {
-    password: "super123",
-    name: "Ana García",
-    role: "supervisor",
-    id: "u2",
-  },
-  "carlos@jetrack.mx": {
-    password: "tech123",
-    name: "Carlos Mendoza",
-    role: "technician",
-    id: "t1",
-  },
-  "roberto@jetrack.mx": {
-    password: "tech123",
-    name: "Roberto García",
-    role: "technician",
-    id: "t2",
-  },
-  "miguel@jetrack.mx": {
-    password: "tech123",
-    name: "Miguel Torres",
-    role: "technician",
-    id: "t3",
-  },
-};
-
 export default function Login() {
   const login = useAppStore((s) => s.login);
+  const systemUsers = useAppStore((s) => s.systemUsers);
   const emailRef = useRef<HTMLInputElement>(null);
 
   const [email, setEmail] = useState("");
@@ -109,9 +74,17 @@ export default function Login() {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 1400));
 
-    const user = validUsers[email.toLowerCase()];
+    const user = systemUsers.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase()
+    );
 
     if (user && user.password === password) {
+      if (!user.active) {
+        setError("Tu cuenta está desactivada. Contacta al administrador.");
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
       if (rememberMe) {
         localStorage.setItem(
           "jetrack_remember",

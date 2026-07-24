@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
+import type { SystemUser } from "@/lib/types";
 import {
   Settings,
   Users,
@@ -26,15 +27,6 @@ import {
 } from "lucide-react";
 
 type SettingsTab = "general" | "usuarios" | "tarifas" | "notificaciones" | "permisos" | "personalizacion";
-
-interface SettingsUser {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "supervisor" | "technician" | "client";
-  active: boolean;
-  phone: string;
-}
 
 interface ServiceRate {
   id: string;
@@ -147,15 +139,6 @@ const presetColors = [
   "#4f46e5",
 ];
 
-const initialUsers: SettingsUser[] = [
-  { id: "u1", name: "María López", email: "maria@jetrack.mx", role: "admin", active: true, phone: "81-1234-5678" },
-  { id: "u2", name: "Carlos Mendoza", email: "carlos@jetrack.mx", role: "technician", active: true, phone: "81-2345-6789" },
-  { id: "u3", name: "Roberto García", email: "roberto@jetrack.mx", role: "technician", active: true, phone: "81-3456-7890" },
-  { id: "u4", name: "Ana Torres", email: "ana@jetrack.mx", role: "supervisor", active: true, phone: "81-4567-8901" },
-  { id: "u5", name: "Luis Ramírez", email: "luis@jetrack.mx", role: "technician", active: false, phone: "81-5678-9012" },
-  { id: "u6", name: "Sofia Hernández", email: "sofia@jetrack.mx", role: "client", active: true, phone: "81-6789-0123" },
-];
-
 const initialRates: ServiceRate[] = [
   { id: "r1", service: "Climatización", rate: 800 },
   { id: "r2", service: "Electricidad", rate: 750 },
@@ -169,7 +152,11 @@ const initialRates: ServiceRate[] = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
-  const [users, setUsers] = useState<SettingsUser[]>(initialUsers);
+  const users = useAppStore((s) => s.systemUsers);
+  const addSystemUser = useAppStore((s) => s.addSystemUser);
+  const updateSystemUser = useAppStore((s) => s.updateSystemUser);
+  const deleteSystemUser = useAppStore((s) => s.deleteSystemUser);
+  const toggleSystemUserActive = useAppStore((s) => s.toggleSystemUserActive);
   const [rates, setRates] = useState<ServiceRate[]>(initialRates);
   const [editingRateId, setEditingRateId] = useState<string | null>(null);
   const [editRateValue, setEditRateValue] = useState<number>(0);
@@ -212,7 +199,8 @@ export default function SettingsPage() {
 
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserRole, setNewUserRole] = useState<SettingsUser["role"]>("technician");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<SystemUser["role"]>("technician");
 
   function handleGeneralChange(field: string, value: string) {
     setGeneralForm((prev) => ({ ...prev, [field]: value }));
@@ -255,26 +243,28 @@ export default function SettingsPage() {
   }
 
   function addUser() {
-    if (!newUserName || !newUserEmail) return;
-    const newUser: SettingsUser = {
+    if (!newUserName || !newUserEmail || !newUserPassword) return;
+    const newUser: SystemUser = {
       id: `u${Date.now()}`,
       name: newUserName,
       email: newUserEmail,
+      password: newUserPassword,
       role: newUserRole,
       active: true,
       phone: "",
     };
-    setUsers((prev) => [...prev, newUser]);
+    addSystemUser(newUser);
     setNewUserName("");
     setNewUserEmail("");
+    setNewUserPassword("");
   }
 
   function removeUser(id: string) {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
+    deleteSystemUser(id);
   }
 
   function toggleUserActive(id: string) {
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u)));
+    toggleSystemUserActive(id);
   }
 
   return (
@@ -434,14 +424,6 @@ export default function SettingsPage() {
                       <Users className="w-5 h-5 text-[var(--color-primary-500)]" />
                       Gestión de Usuarios
                     </h2>
-                    <button className="btn-primary" onClick={() => {
-                      setNewUserName("");
-                      setNewUserEmail("");
-                      setNewUserRole("technician");
-                    }}>
-                      <Plus className="w-4 h-4" />
-                      Agregar Usuario
-                    </button>
                   </div>
 
                   {/* Add user form */}
@@ -466,12 +448,22 @@ export default function SettingsPage() {
                         onChange={(e) => setNewUserEmail(e.target.value)}
                       />
                     </div>
+                    <div className="flex-1 min-w-[160px]">
+                      <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Contraseña</label>
+                      <input
+                        type="password"
+                        className="input-field"
+                        placeholder="Contraseña"
+                        value={newUserPassword}
+                        onChange={(e) => setNewUserPassword(e.target.value)}
+                      />
+                    </div>
                     <div className="w-44">
                       <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Rol</label>
                       <select
                         className="select-field"
                         value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value as SettingsUser["role"])}
+                        onChange={(e) => setNewUserRole(e.target.value as SystemUser["role"])}
                       >
                         <option value="admin">Admin</option>
                         <option value="supervisor">Supervisor</option>

@@ -156,3 +156,13 @@ export interface Notification {
   createdAt: string;
   link?: string;
 }
+
+export interface SystemUser {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  active: boolean;
+  phone: string;
+}
